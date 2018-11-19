@@ -1,6 +1,6 @@
 # clear workspace
 rm(list = ls())
-options(scipen=999)
+options(scipen = 999)
 
 # load packages
 library(formatR)
@@ -11,6 +11,8 @@ library(scales)
 library(ggthemes)
 library(ggExtra)
 library(lubridate)
+library(readxl)
+
 
 # Save plots?
 savePlots <- FALSE
@@ -86,27 +88,19 @@ eloPop$Name[is.na(eloPop$PopTotal)]
 
 # read & merge the life expectancy data
 lifeDat <- read.table("data/WPP2017_Period_Indicators_Medium.csv", sep = ",", header = TRUE, 
-                     dec = ".", stringsAsFactors = FALSE)
-lifeDat <- lifeDat[(lifeDat$Variant == "Medium") & (lifeDat$MidPeriod == 2013),]
+    dec = ".", stringsAsFactors = FALSE)
+lifeDat <- lifeDat[(lifeDat$Variant == "Medium") & (lifeDat$MidPeriod == 2013), ]
 lifeDat$ccode <- countrycode(lifeDat$Location, origin = "country.name", destination = "iso3c")
 
-eloPop <- merge(eloPop, lifeDat, by = "ccode", all.x = TRUE, all.y = FALSE, sort= FALSE)
+eloPop <- merge(eloPop, lifeDat, by = "ccode", all.x = TRUE, all.y = FALSE, sort = FALSE)
 
-# Make first graphic in the same vein as reddit
-ggplot(data = eloPop, aes(x = PopTotal, y = elo17, col = LEx))+geom_point(size=1.5)+
-  scale_x_continuous(trans='log10', breaks = 100*(10^(1:7)),labels=comma) +
-  theme_tufte(base_size = 15)+xlab("Population")+ylab("Elo Rating")+geom_smooth(se=FALSE)+
-  scale_color_gradient2(midpoint=mean(eloPop$LEx,na.rm = T), low="blue", mid="white",
-                        high="darkred", space ="Lab" )
-if(savePlots){
-  ggsave(filename = paste0("plots/",gsub("[^[:alnum:]=\\.]","", lubridate::now()), ".pdf"), 
-         device = cairo_pdf, units = "cm", width = 34, height = 20)
-}
 
-# Kendall Correlation
-cor.test(eloPop$elo17, eloPop$PopTotal,  method="kendall")
-# Marginal Plot
-p <- ggplot(eloPop, aes(PopTotal, elo17)) + geom_point() + theme_tufte(ticks=F) +
-  theme(axis.title=element_blank())+
-  scale_x_continuous(trans='log10', breaks = 100*(10^(1:7)),labels=comma)
-ggMarginal(p, type = "histogram", fill = "transparent")
+# read social progress index
+spi <- read_excel("data/2018-Results.xlsx", sheet = "2018")
+bad.socprog <- spi[is.na(countrycode(spi$Code, origin = "iso3c", destination = "iso3c")), 1:3]
+print(unique(bad.socprog))
+spi$ccode <- countrycode(spi$Code, "iso3c", "iso3c")
+
+# merge the data as well
+#eloPop <-merge(eloPop, spi, by ="ccode", sort = FALSE, all.x = TRUE, all.y = FALSE)
+
