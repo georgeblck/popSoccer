@@ -5,18 +5,107 @@ output: github_document
 
 ## Inspiration
 
-https://old.reddit.com/r/soccer/comments/9xvggj/oc_does_a_nations_population_size_predict_the/
+[This post](https://old.reddit.com/r/soccer/comments/9xvggj/oc_does_a_nations_population_size_predict_the/ "Reddit Link") on reddit was used as inspiration for this body of work.
+The author tries to show the relationship between a nations population and the performance of its soccer team. I like the idea but see some errors that I wanted to correct:
+
+1. The FIFA points ranking is a bad measure of a soccer teams actual strength [(Source)](http://lasek.rexamine.com/football_rankings.pdf "Source"). Measures like Elo-rating should be used **and are used** by more sophisticated writers (e.g. 538). 
+2. An average of soccer performance should be used (e.g. Average ELO rating of the last 10 years), not a point measurement in time. 
+3. The line at 1 million strikes and the coloured bubbles strike me as 100% arbitrary. If anything, a simple clustering algorithm should be used to determine appropriate clusters (e.g. k-means).
 
 ![](xiblhhtbvvy11.png)
 
-## General sources
+## Results
 
-* ELO: eloratings.net
-* Population 2017: https://population.un.org/wpp/
+### Using recent Elo Ratings
+
+First, let us have a look at this graph if we use the World Soccer Elo Rating of December 2017 (pre WorldCup):
+```{r simpleElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,dpi=300,out.width = "1000px"}
+source("readData.R")
+ggplot(eloPop, aes(PopTotal, elo17)) + geom_point() + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+
+  geom_smooth()+annotate("text", x = c(1000), y = c(1900), adj=0,  family="serif",
+           label = c("Elo Rating of Dec. 2017\nand Population (log-Scale)\n"))
+cor.test(eloPop$elo17, eloPop$PopTotal, method = "kendall")
+```
+We see a much clearer positive correlation between Population and Performance, althoug it fizzes out a both ends of population.
+
+What happens when we insert the countries names
+```{r simpleElo17Names, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,dpi=300,out.width = "1000px"}
+ggplot(eloPop, aes(PopTotal, elo17, label = Name)) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+
+  geom_smooth()+annotate("text", x = c(1000), y = c(1900), adj=0,  family="serif",
+           label = c("Elo Rating of Dec. 2017\nand Population (log-Scale)\n"))
+```
+No we can easily recognize the outliers
+
+* Better than expected: Iceland, Portugal, Germany, Brazil
+* Worse than expected: Sri Lanka, Bangladesh, India
+
+Iceland and Portugal are the best examples: two small countries that have performed suprisingly well in recent years. 
+
+### Using average Elo Ratings
+
+The two positive outliers show, that the graphic is biased on nations that have performed well only in recent years. So let us know look at the Average Elo-Rating:
+
+```{r simpleEloAvg, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,dpi=300,out.width = "1000px"}
+ggplot(eloPop, aes(PopTotal, avgElo, label = Name)) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+
+  geom_smooth()+annotate("text", x = c(1000), y = c(1900), adj=0,  family="serif",
+           label = c("Avg Elo Rating\nand Population (log-Scale)\n"))
+cor.test(eloPop$avgElo, eloPop$PopTotal, method = "kendall")
+```
+
+The correlation stays the same, but we see different outliers:
+
+* Better than expected: Urugay, Croatia, Scotland
+* Worse than expected: 
+
+This also makes sense, as Urugay and Croatia are historically better teams than Iceland & Portugal. 
+
+## Using more Information
+
+### Life Expectancy
+
+What happens when we add more Information to the simple plot
+
+```{r lifeElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, dpi=300,out.width = "1000px"}
+ggplot(eloPopLife, aes(x=PopTotal, y=elo17,label=ccode)) + geom_text(aes(color=LEx), size=3) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+geom_smooth(se=FALSE)+
+  scale_color_jcolors_contin("pal3")+annotate("text", x = c(1000), y = c(2000), adj=0,  family="serif",
+           label = c("Dec2017 Elo Rating, Population (log)\nand Life Expectancy"))
+cor.test(eloPopLife$elo17, eloPopLife$LEx, method = "kendall")
+cor.test(eloPopLife$PopTotal, eloPopLife$LEx, method = "kendall")
+```
+We see that it helps somewhat. Life Expectancy is not correlated with Population but **is** positively correlated with Elo-Rating. 
+
+* Nations above the smoothing line seem to have a higher life expectancy (notable exception: Nigeria, Cameroon)
+* Nations below the line seem to have a lower life expectancy (notable exceptions: Taiwan, Hongkong, Singapore). 
+
+### Social Progress Index
+
+We see the same pattern when we use a different measure for the quality of life in a nation:
+
+```{r spiElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, dpi=300,out.width = "1000px"}
+ggplot(eloPopSPI, aes(x=PopTotal, y=elo17,label=ccode)) + geom_text(aes(color=SocialProgressIndex), size=3) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+geom_smooth(se=FALSE)+
+  scale_color_jcolors_contin("pal3")+annotate("text", x = c(1000), y = c(2000), adj=0,  family="serif",
+           label = c("Dec2017 Elo Rating, Population (log)\nand Social Progress Index"))
+cor.test(eloPopSPI$elo17, eloPopSPI$SocialProgressIndex, method = "kendall")
+cor.test(eloPopSPI$PopTotal, eloPopSPI$SocialProgressIndex, method = "kendall")
+```
 
 
+## Data Sources
 
-## Sources for missing Population data
+* ELO: http://www.eloratings.net
+* Population Data 2017: https://population.un.org/wpp/
+
+### Sources for missing Population data
 
 * https://en.wikipedia.org/wiki/Collectivity_of_Saint_Martin
 * https://en.wikipedia.org/wiki/Demography_of_England
@@ -26,8 +115,3 @@ https://old.reddit.com/r/soccer/comments/9xvggj/oc_does_a_nations_population_siz
 * https://en.wikipedia.org/wiki/Zanzibar
 * https://en.wikipedia.org/wiki/Bonaire
 * https://de.wikipedia.org/wiki/Saint-Barth%C3%A9lemy_(Insel)
-
-
-
-
-

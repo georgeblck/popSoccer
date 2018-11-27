@@ -12,10 +12,14 @@ library(ggthemes)
 library(ggExtra)
 library(lubridate)
 library(readxl)
-
+library(ggrepel)
+library(cluster)
+library(factoextra)
+library(RColorBrewer)
+library(jcolors)
 
 # Save plots?
-savePlots <- FALSE
+savePlots <- TRUE
 # Make all the countrycodes for looking up
 ccodes <- codelist_panel
 
@@ -77,22 +81,31 @@ missPopDat <- data.frame(Location = c("Saint Martin", "England", "Northern Irela
     3125200, 1303569, NA, 18905, NA, 5424 * 1000, NA, 9625), ccode = c("MF", "GB-ENG", 
     "GB-NIR", "Chagos Islands", "GB-WLS", "Zanzibar", NA, "BQ-BO", NA, "GB-SCT", 
     NA, "BLM"), stringsAsFactors = FALSE)
+# Remove weird China Double
+popDat[popDat$Location == "Less developed regions, excluding China",] <- NA
 popDat <- rbind.data.frame(popDat, missPopDat)
-
+popDat <- na.omit(popDat)
 
 
 # merge the data
 eloPop <- merge(eloDat, popDat, by = "ccode", all.x = TRUE, all.y = FALSE, sort = FALSE)
 # What are the missing values?
 eloPop$Name[is.na(eloPop$PopTotal)]
+eloPop <- na.omit(eloPop)
+
+
 
 # read & merge the life expectancy data
 lifeDat <- read.table("data/WPP2017_Period_Indicators_Medium.csv", sep = ",", header = TRUE, 
-    dec = ".", stringsAsFactors = FALSE)
+                      dec = ".", stringsAsFactors = FALSE)
 lifeDat <- lifeDat[(lifeDat$Variant == "Medium") & (lifeDat$MidPeriod == 2013), ]
 lifeDat$ccode <- countrycode(lifeDat$Location, origin = "country.name", destination = "iso3c")
+# Remove China Double
+lifeDat[lifeDat$Location == "Less developed regions, excluding China",] <- NA
+# What are the nations without ccode?
+unique(lifeDat[is.na(lifeDat$ccode), "Location"])
+eloPopLife <- merge(eloPop, subset(lifeDat, select=-c(Location,LocID,VarID,Variant,Time,MidPeriod)), by = "ccode", all.x = TRUE, all.y = FALSE, sort = FALSE)
 
-eloPop <- merge(eloPop, lifeDat, by = "ccode", all.x = TRUE, all.y = FALSE, sort = FALSE)
 
 
 # read social progress index
@@ -100,7 +113,10 @@ spi <- read_excel("data/2018-Results.xlsx", sheet = "2018")
 bad.socprog <- spi[is.na(countrycode(spi$Code, origin = "iso3c", destination = "iso3c")), 1:3]
 print(unique(bad.socprog))
 spi$ccode <- countrycode(spi$Code, "iso3c", "iso3c")
+colnames(spi) <- gsub("[[:space:]]", "", colnames(spi))
 
 # merge the data as well
-#eloPop <-merge(eloPop, spi, by ="ccode", sort = FALSE, all.x = TRUE, all.y = FALSE)
+eloPopSPI <-merge(eloPop, subset(spi, select=-c(Country,Code)), by ="ccode", sort = FALSE, all.x = TRUE, all.y = FALSE)
 
+### Create a small data frame of Nations that have all the data
+eloDatFinal <- na.omit(eloPopSPI)
