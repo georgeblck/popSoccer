@@ -5,8 +5,8 @@ output: github_document
 
 ## Inspiration
 
-[This post](https://old.reddit.com/r/soccer/comments/9xvggj/oc_does_a_nations_population_size_predict_the/ "Reddit Link") on reddit was used as inspiration for this body of work.
-The author tries to show the relationship between a nations population and the performance of its soccer team. I like the idea but see some errors that I wanted to correct:
+[This post](https://old.reddit.com/r/soccer/comments/9xvggj/oc_does_a_nations_population_size_predict_the/ "Reddit Link") on reddit was used as inspiration for this body of work (see figure below).
+The author tries to show the relationship between a nations population and the performance of its soccer team. I like the idea (and the graphic) but see some errors that I wanted to correct:
 
 1. The FIFA points ranking is a bad measure of a soccer teams actual strength [(Source)](http://lasek.rexamine.com/football_rankings.pdf "Source"). Measures like Elo-rating should be used **and are used** by more sophisticated writers (e.g. 538). 
 2. An average of soccer performance should be used (e.g. Average ELO rating of the last 10 years), not a point measurement in time. 
@@ -47,7 +47,7 @@ Iceland and Portugal are the best examples: two small countries that have perfor
 
 ### Using average Elo Ratings
 
-The two positive outliers show, that the graphic is biased on nations that have performed well only in recent years. So let us know look at the Average Elo-Rating:
+The two positive outliers show, that the graphic is biased on nations that have performed well only in recent years. So let us now look at the Average Elo-Rating:
 
 ```{r simpleEloAvg, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,dpi=300,out.width = "1000px"}
 ggplot(eloPop, aes(PopTotal, avgElo, label = Name)) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
@@ -99,6 +99,37 @@ cor.test(eloPopSPI$elo17, eloPopSPI$SocialProgressIndex, method = "kendall")
 cor.test(eloPopSPI$PopTotal, eloPopSPI$SocialProgressIndex, method = "kendall")
 ```
 
+
+## Finding clusters in the data
+
+Let us see now what how we can best group the Population and Elo data.
+
+```{r cluster, echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(clValid)
+library(factoextra)
+library(NbClust)
+clusDat <- eloPop[,c("PopTotal", "avgElo")]
+rownames(clusDat) <- eloPop$Name
+clusDat$PopTotal <- log(clusDat$PopTotal)
+
+intern <- clValid(clusDat, nClust = 2:6, 
+              clMethods = c("hierarchical","kmeans","pam"),
+              validation = c("internal"),
+              metric = "manhattan")
+# Summary
+summary(intern)
+set.seed(123)
+res.nbclust <- NbClust(clusDat, distance = "manhattan",
+                  min.nc = 2, max.nc = 10, 
+                  method = "complete", index ="all") 
+
+factoextra::fviz_nbclust(res.nbclust) + theme_minimal()
+# Try out the hierarchical clustering with 2 groups
+res <- hcut(clusDat, k = 3, stand = FALSE)
+fviz_cluster(res, stand = FALSE, repel = FALSE)
+fviz_silhouette(res)
+fviz_dend(res, rect = TRUE)
+```
 
 ## Data Sources
 
