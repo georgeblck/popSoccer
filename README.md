@@ -141,21 +141,23 @@ Let us see now what how we can best group the Population and Elo data.
 library(clValid)
 library(factoextra)
 library(NbClust)
+library(tidyverse)
 clusDat <- eloPop[,c("PopTotal", "avgElo")]
+clusDat <- eloPop[,c("elo17", "highElo", "avgElo", "lowElo", "PopTotal", "elo07")]
 rownames(clusDat) <- eloPop$Name
 clusDat$PopTotal <- log(clusDat$PopTotal)
 
 intern <- clValid(clusDat, nClust = 2:6, 
-              clMethods = c("hierarchical","kmeans","pam"),
+              clMethods = c("hierarchical","kmeans","pam", "sota", "fanny"),
               validation = c("internal"),
-              metric = "manhattan")
+              metric = "euclidean")
 # Summary
 summary(intern)
 ```
 
     ## 
     ## Clustering Methods:
-    ##  hierarchical kmeans pam 
+    ##  hierarchical kmeans pam sota fanny 
     ## 
     ## Cluster sizes:
     ##  2 3 4 5 6 
@@ -163,26 +165,32 @@ summary(intern)
     ## Validation Measures:
     ##                                  2       3       4       5       6
     ##                                                                   
-    ## hierarchical Connectivity   1.6468  4.8758  8.5595 11.0869 14.6782
-    ##              Dunn           0.0297  0.0346  0.0346  0.0293  0.0427
-    ##              Silhouette     0.5760  0.5384  0.4839  0.5347  0.5256
-    ## kmeans       Connectivity   4.4139  8.4972  9.2702 15.0131 20.2067
-    ##              Dunn           0.0131  0.0119  0.0292  0.0184  0.0346
-    ##              Silhouette     0.5679  0.5607  0.5585  0.5396  0.5507
-    ## pam          Connectivity   2.5274 10.2583 15.1980 16.1742 21.5048
-    ##              Dunn           0.0151  0.0113  0.0200  0.0213  0.0102
-    ##              Silhouette     0.5508  0.5443  0.5354  0.5436  0.5012
+    ## hierarchical Connectivity   9.3504 21.7032 29.6222 35.7794 38.6083
+    ##              Dunn           0.0767  0.0503  0.0705  0.0879  0.0879
+    ##              Silhouette     0.5459  0.4756  0.4430  0.3926  0.3455
+    ## kmeans       Connectivity  15.5556 24.6710 34.9813 45.1738 43.4242
+    ##              Dunn           0.0511  0.0402  0.0578  0.0620  0.0803
+    ##              Silhouette     0.5253  0.5014  0.4405  0.4052  0.3739
+    ## pam          Connectivity  28.7067 24.0575 51.2437 58.7179 54.8393
+    ##              Dunn           0.0322  0.0472  0.0326  0.0493  0.0456
+    ##              Silhouette     0.4943  0.4991  0.3939  0.3876  0.3669
+    ## sota         Connectivity  25.8639 35.1778 46.7095 60.5175 71.5250
+    ##              Dunn           0.0381  0.0381  0.0557  0.0686  0.0686
+    ##              Silhouette     0.5143  0.3909  0.4208  0.3684  0.3118
+    ## fanny        Connectivity  11.3810 23.8175 40.0619 80.9036 63.0750
+    ##              Dunn           0.0483  0.0449  0.0660  0.0478  0.0572
+    ##              Silhouette     0.4850  0.4914  0.4009  0.3234  0.3264
     ## 
     ## Optimal Scores:
     ## 
     ##              Score  Method       Clusters
-    ## Connectivity 1.6468 hierarchical 2       
-    ## Dunn         0.0427 hierarchical 6       
-    ## Silhouette   0.5760 hierarchical 2
+    ## Connectivity 9.3504 hierarchical 2       
+    ## Dunn         0.0879 hierarchical 5       
+    ## Silhouette   0.5459 hierarchical 2
 
 ``` r
 set.seed(123)
-res.nbclust <- NbClust(clusDat, distance = "manhattan",
+res.nbclust <- NbClust(clusDat, distance = "euclidean",
                   min.nc = 2, max.nc = 10, 
                   method = "complete", index ="all") 
 ```
@@ -204,12 +212,12 @@ res.nbclust <- NbClust(clusDat, distance = "manhattan",
     ##  
     ## ******************************************************************* 
     ## * Among all indices:                                                
-    ## * 6 proposed 2 as the best number of clusters 
-    ## * 10 proposed 3 as the best number of clusters 
-    ## * 1 proposed 4 as the best number of clusters 
-    ## * 1 proposed 5 as the best number of clusters 
-    ## * 3 proposed 7 as the best number of clusters 
-    ## * 3 proposed 10 as the best number of clusters 
+    ## * 3 proposed 2 as the best number of clusters 
+    ## * 13 proposed 3 as the best number of clusters 
+    ## * 3 proposed 6 as the best number of clusters 
+    ## * 1 proposed 8 as the best number of clusters 
+    ## * 1 proposed 9 as the best number of clusters 
+    ## * 2 proposed 10 as the best number of clusters 
     ## 
     ##                    ***** Conclusion *****                            
     ##  
@@ -225,12 +233,13 @@ factoextra::fviz_nbclust(res.nbclust) + theme_minimal()
     ## Among all indices: 
     ## ===================
     ## * 2 proposed  0 as the best number of clusters
-    ## * 6 proposed  2 as the best number of clusters
-    ## * 10 proposed  3 as the best number of clusters
-    ## * 1 proposed  4 as the best number of clusters
-    ## * 1 proposed  5 as the best number of clusters
-    ## * 3 proposed  7 as the best number of clusters
-    ## * 3 proposed  10 as the best number of clusters
+    ## * 1 proposed  1 as the best number of clusters
+    ## * 3 proposed  2 as the best number of clusters
+    ## * 13 proposed  3 as the best number of clusters
+    ## * 3 proposed  6 as the best number of clusters
+    ## * 1 proposed  8 as the best number of clusters
+    ## * 1 proposed  9 as the best number of clusters
+    ## * 2 proposed  10 as the best number of clusters
     ## 
     ## Conclusion
     ## =========================
@@ -241,27 +250,30 @@ factoextra::fviz_nbclust(res.nbclust) + theme_minimal()
 ``` r
 # Try out the hierarchical clustering with 2 groups
 res <- hcut(clusDat, k = 3, stand = FALSE)
-fviz_cluster(res, stand = FALSE, repel = FALSE)
+
+
+completeDat <- mutate(eloPop, cluster = res$cluster)
+ggplot(completeDat, aes(PopTotal, avgElo, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+scale_color_discrete(guide=FALSE)
 ```
 
 ![](README_files/figure-markdown_github/cluster-4.png)
 
 ``` r
-fviz_silhouette(res)
+ggplot(completeDat, aes(PopTotal, elo17, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+
+  scale_color_discrete(guide=FALSE)
 ```
-
-    ##   cluster size ave.sil.width
-    ## 1       1   90          0.46
-    ## 2       2   81          0.69
-    ## 3       3   58          0.38
 
 ![](README_files/figure-markdown_github/cluster-5.png)
 
 ``` r
-fviz_dend(res, rect = TRUE)
+#fviz_cluster(res, stand = FALSE, repel = FALSE)
+#fviz_silhouette(res)
+#fviz_dend(res, rect = TRUE)
 ```
-
-![](README_files/figure-markdown_github/cluster-6.png)
 
 Data Sources
 ------------

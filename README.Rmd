@@ -108,27 +108,39 @@ Let us see now what how we can best group the Population and Elo data.
 library(clValid)
 library(factoextra)
 library(NbClust)
+library(tidyverse)
 clusDat <- eloPop[,c("PopTotal", "avgElo")]
+clusDat <- eloPop[,c("elo17", "highElo", "avgElo", "lowElo", "PopTotal", "elo07")]
 rownames(clusDat) <- eloPop$Name
 clusDat$PopTotal <- log(clusDat$PopTotal)
 
 intern <- clValid(clusDat, nClust = 2:6, 
-              clMethods = c("hierarchical","kmeans","pam"),
+              clMethods = c("hierarchical","kmeans","pam", "sota", "fanny"),
               validation = c("internal"),
-              metric = "manhattan")
+              metric = "euclidean")
 # Summary
 summary(intern)
 set.seed(123)
-res.nbclust <- NbClust(clusDat, distance = "manhattan",
+res.nbclust <- NbClust(clusDat, distance = "euclidean",
                   min.nc = 2, max.nc = 10, 
                   method = "complete", index ="all") 
 
 factoextra::fviz_nbclust(res.nbclust) + theme_minimal()
 # Try out the hierarchical clustering with 2 groups
 res <- hcut(clusDat, k = 3, stand = FALSE)
-fviz_cluster(res, stand = FALSE, repel = FALSE)
-fviz_silhouette(res)
-fviz_dend(res, rect = TRUE)
+
+
+completeDat <- mutate(eloPop, cluster = res$cluster)
+ggplot(completeDat, aes(PopTotal, avgElo, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+scale_color_discrete(guide=FALSE)
+ggplot(completeDat, aes(PopTotal, elo17, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
+                                                             (10^(1:7)), labels = comma)+
+  scale_color_discrete(guide=FALSE)
+#fviz_cluster(res, stand = FALSE, repel = FALSE)
+#fviz_silhouette(res)
+#fviz_dend(res, rect = TRUE)
 ```
 
 ## Data Sources
