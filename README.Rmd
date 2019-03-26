@@ -19,7 +19,7 @@ The author tries to show the relationship between a nations population and the p
 ### Using recent Elo Ratings
 
 First, let us have a look at this graph if we use the World Soccer Elo Rating of December 2017 (pre WorldCup):
-```{r simpleElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,dpi=300,out.width = "1000px"}
+```{r simpleElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,out.width = "100%"}
 source("readData.R")
 ggplot(eloPop, aes(PopTotal, elo17)) + geom_point() + theme_tufte(ticks = F) + 
   theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
@@ -31,19 +31,19 @@ cor.test(eloPop$elo17, eloPop$PopTotal, method = "kendall")
 We see a much clearer positive correlation between Population and Performance, althoug it fizzes out a both ends of population.
 
 What happens when we insert the countries names
-```{r simpleElo17Names, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,dpi=300,out.width = "1000px"}
+```{r simpleElo17Names, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,out.width = "100%"}
 ggplot(eloPop, aes(PopTotal, elo17, label = Name)) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
   theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
                                                              (10^(1:7)), labels = comma)+
   geom_smooth()+annotate("text", x = c(1000), y = c(1900), adj=0,  family="serif",
            label = c("Elo Rating of Dec. 2017\nand Population (log-Scale)\n"))
 ```
-No we can easily recognize the outliers
+Now we can easily recognize outliers
 
 * Better than expected: Iceland, Portugal, Germany, Brazil
 * Worse than expected: Sri Lanka, Bangladesh, India
 
-Iceland and Portugal are the best examples: two small countries that have performed suprisingly well in recent years. 
+Iceland and Portugal are the good examples why we should use time-averaged performance measures: two small countries that have performed suprisingly well only in **recent years**. 
 
 ### Using average Elo Ratings
 
@@ -61,7 +61,7 @@ cor.test(eloPop$avgElo, eloPop$PopTotal, method = "kendall")
 The correlation stays the same, but we see different outliers:
 
 * Better than expected: Urugay, Croatia, Scotland
-* Worse than expected: 
+* Worse than expected: ???
 
 This also makes sense, as Urugay and Croatia are historically better teams than Iceland & Portugal. 
 
@@ -71,7 +71,7 @@ This also makes sense, as Urugay and Croatia are historically better teams than 
 
 What happens when we add more Information to the simple plot
 
-```{r lifeElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, dpi=300,out.width = "1000px"}
+```{r lifeElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, out.width = "100%"}
 ggplot(eloPopLife, aes(x=PopTotal, y=elo17,label=ccode)) + geom_text(aes(color=LEx), size=3) + theme_tufte(ticks = F) + 
   theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
                                                              (10^(1:7)), labels = comma)+geom_smooth(se=FALSE)+
@@ -89,7 +89,7 @@ We see that it helps somewhat. Life Expectancy is not correlated with Population
 
 We see the same pattern when we use a different measure for the quality of life in a nation:
 
-```{r spiElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, dpi=300,out.width = "1000px"}
+```{r spiElo17, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, out.width = "100%"}
 ggplot(eloPopSPI, aes(x=PopTotal, y=elo17,label=ccode)) + geom_text(aes(color=SocialProgressIndex), size=3) + theme_tufte(ticks = F) + 
   theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
                                                              (10^(1:7)), labels = comma)+geom_smooth(se=FALSE)+
@@ -102,9 +102,12 @@ cor.test(eloPopSPI$PopTotal, eloPopSPI$SocialProgressIndex, method = "kendall")
 
 ## Finding clusters in the data
 
-Let us see now what how we can best group the Population and Elo data.
+What happens when we look for Clusters based on the Population and multiple Elo-Values
 
-```{r cluster, echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+* Highest, Lowest and Average Value since 2007
+* 2007 and 2017 Values
+
+```{r cluster, message=FALSE, warning=FALSE, include=FALSE, out.width="100%", paged.print=FALSE}
 library(clValid)
 library(factoextra)
 library(NbClust)
@@ -127,20 +130,23 @@ res.nbclust <- NbClust(clusDat, distance = "euclidean",
 
 factoextra::fviz_nbclust(res.nbclust) + theme_minimal()
 # Try out the hierarchical clustering with 2 groups
-res <- hcut(clusDat, k = 3, stand = FALSE)
 
-
-completeDat <- mutate(eloPop, cluster = res$cluster)
-ggplot(completeDat, aes(PopTotal, avgElo, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
-  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
-                                                             (10^(1:7)), labels = comma)+scale_color_discrete(guide=FALSE)
-ggplot(completeDat, aes(PopTotal, elo17, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
-  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 * 
-                                                             (10^(1:7)), labels = comma)+
-  scale_color_discrete(guide=FALSE)
 #fviz_cluster(res, stand = FALSE, repel = FALSE)
 #fviz_silhouette(res)
 #fviz_dend(res, rect = TRUE)
+```
+
+We find that the optimal number of clusters is 3 and get the cluster groups with hierarchical clustering.
+
+```{r clustered, echo=FALSE, message=FALSE, warning=FALSE, out.width="100%", paged.print=FALSE}
+res <- hcut(clusDat, k = 3, stand = FALSE)
+completeDat <- mutate(eloPop, cluster = res$cluster)
+
+ggplot(completeDat, aes(PopTotal, avgElo, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 *(10^(1:7)), labels = comma)+scale_color_discrete(guide=FALSE)
+ggplot(completeDat, aes(PopTotal, elo17, label = Name , colour = factor(cluster))) + geom_text(size=1.5) + theme_tufte(ticks = F) + 
+  theme(axis.title = element_blank()) + scale_x_continuous(trans = "log10", breaks = 100 *  (10^(1:7)), labels = comma)+
+  scale_color_discrete(guide=FALSE)
 ```
 
 ## Data Sources

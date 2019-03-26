@@ -111,7 +111,7 @@ eloPopLife <- merge(eloPop, subset(lifeDat, select=-c(Location,LocID,VarID,Varia
 # read social progress index
 spi <- read_excel("data/2018-Results.xlsx", sheet = "2018")
 bad.socprog <- spi[is.na(countrycode(spi$Code, origin = "iso3c", destination = "iso3c")), 1:3]
-print(unique(bad.socprog))
+#print(unique(bad.socprog))
 spi$ccode <- countrycode(spi$Code, "iso3c", "iso3c")
 colnames(spi) <- gsub("[[:space:]]", "", colnames(spi))
 
